@@ -124,17 +124,17 @@ runs:
 
         # Format and print the messages
         cat ${{ github.workspace }}/luals/log/check.json | \
-          jq -r --arg YELLOW "$YELLOW" --arg RED "$RED" --arg NC "$NC" \
+          jq -r --arg YELLOW "yellow" --arg RED "red" \
           'to_entries | map(.key as $file | .value[] | 
             {
               file: $file | sub("file://${{ github.workspace }}/repo/"; ""), 
               code: .code, 
               line: .range.start.line,
               message: .message, 
-              severity: (if .severity <= 1 then "style='color:red;'" else "color:yellow;" end)
+              severity: if .severity <= 1 then $RED else $YELLOW end
             }) | 
-            map("**<span \(.severity)>\(.code)</span>:** \(.file)#L\(.line) - \(.message)") | .[]' \
-            | tee $GITHUB_STEP_SUMMARY
+            map("**<span style=\"color:\(.severity)\">\(.code)</span>:** \(.file)#L\(.line + 1) - \(.message)") | .[]' \
+          | tee $GITHUB_STEP_SUMMARY
 
         if [[ $STATUS == 0 ]] ; then
           echo "✅ All checks succeeded!" | tee $GITHUB_STEP_SUMMARY
