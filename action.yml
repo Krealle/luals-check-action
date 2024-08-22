@@ -1,0 +1,107 @@
+name: luals-checker
+description: Runs LuaLS check with wow api lib.
+branding:
+  icon: check-square
+  color: yellow
+
+inputs:
+  extra-args:
+    description: >
+      Extra arguments to pass to LuaLS.
+
+      See https://luals.github.io/wiki/usage/#arguments
+    required: false
+  checklevel:
+    description: >
+      Check level to use.
+
+      See https://luals.github.io/wiki/usage/#--checklevel
+
+      Defaults to Warning.
+    required: false
+    default: Warning
+
+runs:
+  using: composite
+
+  steps:
+    - name: Cache LuaLS
+      id: cache-luals
+      uses: actions/cache@v4
+      env:
+        cache-name: luals
+      with:
+        path: ${{ github.workspace }}/luals
+        key: LuaLS/lua-language-server/3.10.1
+
+    - name: Install LuaLS build dependencies
+      if: ${{ steps.cache-luals.outputs.cache-hit != 'true' }}
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        sudo apt-get update
+        sudo apt-get install -y ninja-build
+
+    - name: Checkout LuaLS
+      if: ${{ steps.cache-luals.outputs.cache-hit != 'true' }}
+      uses: actions/checkout@v4
+      with:
+        repository: LuaLS/lua-language-server
+        ref: 3.10.1
+        submodules: recursive
+        path: ./luals
+
+    - name: Compile LuaLS
+      if: ${{ steps.cache-luals.outputs.cache-hit != 'true' }}
+      run: |
+        cd ${{ github.workspace }}/luals
+        pushd 3rd/luamake
+        ./compile/build.sh
+        popd
+        ./3rd/luamake/luamake -notest rebuild
+        rm -rf test # reduces cache size by ~40%
+
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+      with:
+        path: ./repo
+
+    - name: Checkout vscode-wow-api
+      uses: actions/checkout@v4
+      with:
+        repository: Ketho/vscode-wow-api
+        path: ./vscode-wow-api
+
+    - name: Add vscode-wow-api to .luarc.json
+      run: |
+        jq '.["workspace.library"] += ["${{ github.workspace }}/vscode-wow-api/Annotations"]' ${{ github.workspace }}/repo/.luarc.json > temp.json && mv temp.json ${{ github.workspace }}/repo/.luarc.json
+
+    - name: Run checks
+      shell: bash
+      run: |
+        cd ${{ github.workspace }}/luals
+        rm -f log/check.json
+        ./bin/lua-language-server \
+          --checklevel ${{ inputs.checklevel }} \
+          --configpath "${{ github.workspace }}/repo/.luarc.json" \
+          --trust_all_plugins \
+          --check "${{ github.workspace }}/repo" \
+          ${{ inputs.extra-args }}
+        # LuaLS >= 3.9 always writes check.json, older ones only on error, normalize to 3.9 behavior
+        touch log/check.json
+        STATUS=0
+        if [[ $(wc -l < log/check.json) > 0 ]] ; then
+          STATUS=1
+        fi
+
+        # Warnings as readable outsputs because GitHub doesn't show any metadata in the log when emitting annotations and limits annotations to 10 or so
+        cat ${{ github.workspace }}/luals/log/check.json | \
+          jq -r 'to_entries | map(.key as $file | .value[] | {file: $file | sub("file://${{ github.workspace }}/repo/"; ""), title: .code, line: .range.start.line, endLine: .range.end.line, col: .range.start.character, endColumn: .range.end.character, message: .message, level: (if .severity <= 1 then "Error" else "Warning" end)}) | map("\(.level): \(.file):\(.line+1):\(.col+1) \(.title) - \(.message)") | .[]' \
+          | tee $GITHUB_STEP_SUMMARY
+        if [[ $STATUS == 0 ]] ; then
+          echo "✅ All checks succeeded!" | tee $GITHUB_STEP_SUMMARY
+        fi
+
+        # GitHub annotations
+        cat ${{ github.workspace }}/luals/log/check.json |  jq -r 'to_entries | map(.key as $file | .value[] | {file: $file | sub("file://${{ github.workspace }}/repo/"; ""), title: .code, line: .range.start.line, endLine: .range.end.line, col: .range.start.character, endColumn: .range.end.character, message: .message | gsub("\n"; "\\\\n"; "m"), level: (if .severity <= 1 then "error" else "warning" end)}) | map("::\(.level) file=\(.file),line=\(.line+1),endLine=\(.line+1),col=\(.col+1),endColumn=\(.endColumn+1),title=\(.title)::\(.message)") | .[]'
+        rm -rf log/*
+        exit $STATUS
