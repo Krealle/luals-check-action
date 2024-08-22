@@ -95,7 +95,7 @@ runs:
         cat ${{ github.workspace }}/repo/${{ inputs.config-path }}
 
         # Strip trailing commas in the JSON file using sed
-        sed -i.bak -E ':a;N;$!ba;s/,([ \t\r\n]*[}\]])/\1/g' ${{ github.workspace }}/repo/${{ inputs.config-path }}
+        sed -i.bak -E -n 'H; x; s:,(\s*\n\s*}|\s*]):\1:; P; ${x; p}' ${{ github.workspace }}/repo/${{ inputs.config-path }} | sed '1 d'
 
         # Print the JSON file after stripping commas
         echo "After stripping commas:"
