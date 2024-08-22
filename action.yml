@@ -133,8 +133,8 @@ runs:
               message: .message, 
               severity: (if .severity <= 1 then "<style>span{color:red;}</style>" else "<style>span{color:yellow;}</style>" end)
             }) | 
-            map("**\(.severity)<span>\(.code)</span>:** \(.file)#L\(.line) - \(.message)") | .[]' | \ map
-          tee $GITHUB_STEP_SUMMARY
+            map("**\(.severity)<span>\(.code)</span>:** \(.file)#L\(.line) - \(.message)") | .[]' \
+            | tee $GITHUB_STEP_SUMMARY
 
         if [[ $STATUS == 0 ]] ; then
           echo "✅ All checks succeeded!" | tee $GITHUB_STEP_SUMMARY
