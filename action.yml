@@ -86,7 +86,7 @@ runs:
         repository: Ketho/vscode-wow-api
         path: ./vscode-wow-api
 
-    - name: Add vscode-wow-api to .luarc.json
+    - name: Add vscode-wow-api to config file
       shell: bash
       run: |
         jq '.["workspace.library"] += ["${{ github.workspace }}/vscode-wow-api/Annotations"]' ${{ github.workspace }}/repo/${{ inputs.config-path }} > temp.json && mv temp.json ${{ github.workspace }}/repo/${{ inputs.config-path }}
@@ -102,8 +102,10 @@ runs:
           --trust_all_plugins \
           --check "${{ github.workspace }}/repo${{ inputs.check-dir }}" \
           ${{ inputs.extra-args }}
+
         # LuaLS >= 3.9 always writes check.json, older ones only on error, normalize to 3.9 behavior
         touch log/check.json
+
         STATUS=0
         if [[ $(wc -l < log/check.json) > 0 ]] ; then
           STATUS=1
