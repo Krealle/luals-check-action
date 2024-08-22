@@ -33,6 +33,14 @@ inputs:
 
       Defaults to the repository root if not specified. Use this option to limit the check to a specific directory or folder.
     required: false
+  annotate:
+    description: >
+      Whether to annotate the check results with GitHub annotations.
+      Must be set to "none", "warning" or "error".
+
+      Defaults to "warning".
+    required: false
+    default: warning
 
 runs:
   using: composite
@@ -103,7 +111,7 @@ runs:
           --check "${{ github.workspace }}/repo${{ inputs.check-dir }}" \
           ${{ inputs.extra-args }}
 
-        echo log/check.json
+        cat ${{ github.workspace }}/luals/log/check.json
         STATUS=0
         if [[ $(wc -l < log/check.json) > 0 ]] ; then
           STATUS=1
