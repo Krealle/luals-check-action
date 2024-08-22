@@ -103,6 +103,7 @@ runs:
           --check "${{ github.workspace }}/repo${{ inputs.check-dir }}" \
           ${{ inputs.extra-args }}
 
+        echo cat log/check.json
         STATUS=0
         if [[ $(wc -l < log/check.json) > 0 ]] ; then
           STATUS=1
