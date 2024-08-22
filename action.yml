@@ -27,6 +27,12 @@ inputs:
       Defaults to .luarc.json in the repository root.
     required: false
     default: .luarc.json
+  check-dir:
+    description: >
+      Path to directory to check.
+
+      Defaults to the repository root.
+    required: false
 
 runs:
   using: composite
@@ -94,7 +100,7 @@ runs:
           --checklevel ${{ inputs.checklevel }} \
           --configpath "${{ github.workspace }}/repo/${{ inputs.config-path }}" \
           --trust_all_plugins \
-          --check "${{ github.workspace }}/repo" \
+          --check "${{ github.workspace }}/repo${{ inputs.check-dir }}" \
           ${{ inputs.extra-args }}
         # LuaLS >= 3.9 always writes check.json, older ones only on error, normalize to 3.9 behavior
         touch log/check.json
