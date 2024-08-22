@@ -94,12 +94,18 @@ runs:
         echo "Before processing:"
         cat ${{ github.workspace }}/repo/${{ inputs.config-path }}
 
-        # Strip trailing commas and add the library
-        jq --compact-output '.' ${{ github.workspace }}/repo/${{ inputs.config-path }} > temp.json && mv temp.json ${{ github.workspace }}/repo/${{ inputs.config-path }}
+        # Strip trailing commas in the JSON file using sed
+        sed -i.bak -E ':a;N;$!ba;s/,([ \t\r\n]*[}\]])/\1/g' ${{ github.workspace }}/repo/${{ inputs.config-path }}
+
+        # Print the JSON file after stripping commas
+        echo "After stripping commas:"
+        cat ${{ github.workspace }}/repo/${{ inputs.config-path }}
+
+        # Add the library to the config file
         jq '.["workspace.library"] += ["${{ github.workspace }}/vscode-wow-api/Annotations"]' ${{ github.workspace }}/repo/${{ inputs.config-path }} > temp.json && mv temp.json ${{ github.workspace }}/repo/${{ inputs.config-path }}
 
-        # Print the JSON file after processing
-        echo "After processing:"
+        # Print the final JSON file
+        echo "Final JSON:"
         cat ${{ github.workspace }}/repo/${{ inputs.config-path }}
 
     - name: Run checks
