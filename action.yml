@@ -83,7 +83,7 @@ runs:
     - name: Add vscode-wow-api to .luarc.json
       shell: bash
       run: |
-        jq '.["workspace.library"] += ["${{ github.workspace }}/vscode-wow-api/Annotations"]' ${{ github.workspace }}/repo/${{ github.config-path }} > temp.json && mv temp.json ${{ github.workspace }}/repo/${{ github.config-path }}
+        jq '.["workspace.library"] += ["${{ github.workspace }}/vscode-wow-api/Annotations"]' ${{ github.workspace }}/repo/${{ inputs.config-path }} > temp.json && mv temp.json ${{ github.workspace }}/repo/${{ inputs.config-path }}
 
     - name: Run checks
       shell: bash
@@ -92,7 +92,7 @@ runs:
         rm -f log/check.json
         ./bin/lua-language-server \
           --checklevel ${{ inputs.checklevel }} \
-          --configpath "${{ github.workspace }}/repo/${{ github.config-path }}" \
+          --configpath "${{ github.workspace }}/repo/${{ inputs.config-path }}" \
           --trust_all_plugins \
           --check "${{ github.workspace }}/repo" \
           ${{ inputs.extra-args }}
