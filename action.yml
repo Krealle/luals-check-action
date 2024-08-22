@@ -90,6 +90,10 @@ runs:
     - name: Add vscode-wow-api to config file
       shell: bash
       run: |
+        # Strip trailing commas in the JSON file
+        sed -i 's/, *\([]}]\)/\1/' ${{ github.workspace }}/repo/${{ inputs.config-path }}
+
+        # Add the library to the config file
         jq '.["workspace.library"] += ["${{ github.workspace }}/vscode-wow-api/Annotations"]' ${{ github.workspace }}/repo/${{ inputs.config-path }} > temp.json && mv temp.json ${{ github.workspace }}/repo/${{ inputs.config-path }}
 
     - name: Run checks
