@@ -33,14 +33,6 @@ inputs:
 
       Defaults to the repository root if not specified. Use this option to limit the check to a specific directory or folder.
     required: false
-  annotate:
-    description: >
-      Whether to annotate the check results with GitHub annotations.
-      Must be set to "none", "warning" or "error".
-
-      Defaults to "warning".
-    required: false
-    default: warning
 
 runs:
   using: composite
