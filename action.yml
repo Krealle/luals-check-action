@@ -126,9 +126,9 @@ runs:
               code: .code, 
               line: .range.start.line,
               message: .message, 
-              severity: (if .severity <= 1 then "Error" else "Warning" end)
+              severity: (if .severity <= 1 then "ERR" else "WARN" end)
             }) | 
-            map("**\(.severity):** \(.code) \(.file)#L\(.line)<br/><small>\(.message)</small>") | .[]' \
+            map("**[\(.severity)] \(.code):** \(.file)#L\(.line)<br/><small>\(.message)</small>") | .[]' \
           | tee $GITHUB_STEP_SUMMARY
 
         if [[ $STATUS == 0 ]] ; then
