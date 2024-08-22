@@ -36,6 +36,7 @@ runs:
 
     - name: Install LuaLS build dependencies
       if: ${{ steps.cache-luals.outputs.cache-hit != 'true' }}
+      shell: sh
       run: |
         export DEBIAN_FRONTEND=noninteractive
         sudo apt-get update
@@ -52,6 +53,7 @@ runs:
 
     - name: Compile LuaLS
       if: ${{ steps.cache-luals.outputs.cache-hit != 'true' }}
+      shell: bash
       run: |
         cd ${{ github.workspace }}/luals
         pushd 3rd/luamake
