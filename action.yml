@@ -22,11 +22,18 @@ inputs:
     default: Warning
   config-path:
     description: >
-      Path to .luarc.json to use.
+      The relative path to the Lua configuration file used by LuaLS.
 
-      Defaults to .luarc.json in the repository root.
+      Defaults to `.luarc.json` in the repository root if not specified.
     required: false
     default: .luarc.json
+  check-dir:
+    description: >
+      The relative path to the directory you want LuaLS to check within your repository.
+      Use this option to limit the check to a specific directory or folder.
+
+      Defaults to the repository root if not specified.
+    required: false
 
 runs:
   using: composite
@@ -80,7 +87,7 @@ runs:
         repository: Ketho/vscode-wow-api
         path: ./vscode-wow-api
 
-    - name: Add vscode-wow-api to .luarc.json
+    - name: Add vscode-wow-api to config file
       shell: bash
       run: |
         jq '.["workspace.library"] += ["${{ github.workspace }}/vscode-wow-api/Annotations"]' ${{ github.workspace }}/repo/${{ inputs.config-path }} > temp.json && mv temp.json ${{ github.workspace }}/repo/${{ inputs.config-path }}
@@ -94,24 +101,47 @@ runs:
           --checklevel ${{ inputs.checklevel }} \
           --configpath "${{ github.workspace }}/repo/${{ inputs.config-path }}" \
           --trust_all_plugins \
-          --check "${{ github.workspace }}/repo" \
+          --check "${{ github.workspace }}/repo${{ inputs.check-dir }}" \
           ${{ inputs.extra-args }}
-        # LuaLS >= 3.9 always writes check.json, older ones only on error, normalize to 3.9 behavior
-        touch log/check.json
+
         STATUS=0
         if [[ $(wc -l < log/check.json) > 0 ]] ; then
           STATUS=1
         fi
 
-        # Warnings as readable outputs because GitHub doesn't show any metadata in the log when emitting annotations and limits annotations to 10 or so
+        # Format and print the messages
         cat ${{ github.workspace }}/luals/log/check.json | \
-          jq -r 'to_entries | map(.key as $file | .value[] | {file: $file | sub("file://${{ github.workspace }}/repo/"; ""), title: .code, line: .range.start.line, endLine: .range.end.line, col: .range.start.character, endColumn: .range.end.character, message: .message, level: (if .severity <= 1 then "Error" else "Warning" end)}) | map("\(.level): \(.file):\(.line+1):\(.col+1) \(.title) - \(.message)") | .[]' \
+          jq -r \
+          'to_entries | map(.key as $file | .value[] | 
+            {
+              file: $file | sub("file://${{ github.workspace }}/repo/"; ""), 
+              code: .code, 
+              line: .range.start.line,
+              message: .message, 
+              severity: (if .severity <= 1 then "ERR" else "WARN" end)
+            }) | 
+            map("**[\(.severity)] \(.code):** \(.file)#L\(.line)<br><code>\(.message)</code>") | .[]' \
           | tee $GITHUB_STEP_SUMMARY
+
         if [[ $STATUS == 0 ]] ; then
           echo "✅ All checks succeeded!" | tee $GITHUB_STEP_SUMMARY
         fi
 
         # GitHub annotations
-        cat ${{ github.workspace }}/luals/log/check.json |  jq -r 'to_entries | map(.key as $file | .value[] | {file: $file | sub("file://${{ github.workspace }}/repo/"; ""), title: .code, line: .range.start.line, endLine: .range.end.line, col: .range.start.character, endColumn: .range.end.character, message: .message | gsub("\n"; "\\\\n"; "m"), level: (if .severity <= 1 then "error" else "warning" end)}) | map("::\(.level) file=\(.file),line=\(.line+1),endLine=\(.line+1),col=\(.col+1),endColumn=\(.endColumn+1),title=\(.title)::\(.message)") | .[]'
+        cat ${{ github.workspace }}/luals/log/check.json | \
+        jq -r \
+        'to_entries | map(.key as $file | .value[] | 
+          {
+            file: $file | sub("file://${{ github.workspace }}/repo/"; ""), 
+            title: .code, 
+            line: .range.start.line, 
+            endLine: .range.end.line, 
+            col: .range.start.character, 
+            endColumn: .range.end.character, 
+            message: .message | gsub("\n"; "\\\\n"; "m"), 
+            level: (if .severity <= 1 then "error" else "warning" end)
+          }) | 
+          map("::\(.level) file=\(.file),line=\(.line+1),endLine=\(.line+1),col=\(.col+1),endColumn=\(.endColumn+1),title=\(.title)::\(.message)") | .[]'
+
         rm -rf log/*
         exit $STATUS
