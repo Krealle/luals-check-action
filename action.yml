@@ -30,8 +30,9 @@ inputs:
   check-dir:
     description: >
       The relative path to the directory you want LuaLS to check within your repository.
+      Use this option to limit the check to a specific directory or folder.
 
-      Defaults to the repository root if not specified. Use this option to limit the check to a specific directory or folder.
+      Defaults to the repository root if not specified.
     required: false
 
 runs:
