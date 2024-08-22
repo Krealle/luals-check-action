@@ -131,9 +131,9 @@ runs:
               code: .code, 
               line: .range.start.line,
               message: .message, 
-              severity: (if .severity <= 1 then $RED else $YELLOW end) + .code + $NC 
+              severity: (if .severity <= 1 then $RED else $YELLOW end)
             }) | 
-            map("\(.severity): \(.file)#L\(.line) - \(.message)") | .[]' | \
+            map("\(.severity)\(.code)\($NC): \(.file)#L\(.line) - \(.message)") | .[]' | \
           tee $GITHUB_STEP_SUMMARY
 
         if [[ $STATUS == 0 ]] ; then
