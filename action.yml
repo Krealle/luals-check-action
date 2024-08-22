@@ -117,13 +117,24 @@ runs:
           STATUS=1
         fi
 
-        # Warnings as readable outputs because GitHub doesn't show any metadata in the log when emitting annotations and limits annotations to 10 or so
+        # ANSI color codes
+        YELLOW='\033[1;33m'
+        RED='\033[1;31m'
+        NC='\033[0m' # No Color
+
+        # Format and print the messages
         cat ${{ github.workspace }}/luals/log/check.json | \
-          jq -r 'to_entries | map(.key as $file | .value[] | {file: $file | sub("file://${{ github.workspace }}/repo/"; ""), title: .code, line: .range.start.line, endLine: .range.end.line, col: .range.start.character, endColumn: .range.end.character, message: .message, level: (if .severity <= 1 then "Error" else "Warning" end)}) | map("\(.level): \(.file):\(.line+1):\(.col+1) \(.title) - \(.message)") | .[]' \
-          | tee $GITHUB_STEP_SUMMARY
-        if [[ $STATUS == 0 ]] ; then
-          echo "✅ All checks succeeded!" | tee $GITHUB_STEP_SUMMARY
-        fi
+          jq -r --arg YELLOW "$YELLOW" --arg RED "$RED" --arg NC "$NC" \
+          'to_entries | map(.key as $file | .value[] | 
+            {
+              file: $file | sub("file://${{ github.workspace }}/repo/"; ""), 
+              code: .code, 
+              line: .range.start.line + 1, 
+              message: .message, 
+              severity: (if .severity <= 1 then $RED else $YELLOW end) + .code + $NC 
+            }) | 
+            map("\(.severity): \(.file)#L\(.line) - \(.message)") | .[]' | \
+          tee $GITHUB_STEP_SUMMARY
 
         # GitHub annotations
         cat ${{ github.workspace }}/luals/log/check.json |  jq -r 'to_entries | map(.key as $file | .value[] | {file: $file | sub("file://${{ github.workspace }}/repo/"; ""), title: .code, line: .range.start.line, endLine: .range.end.line, col: .range.start.character, endColumn: .range.end.character, message: .message | gsub("\n"; "\\\\n"; "m"), level: (if .severity <= 1 then "error" else "warning" end)}) | map("::\(.level) file=\(.file),line=\(.line+1),endLine=\(.line+1),col=\(.col+1),endColumn=\(.endColumn+1),title=\(.title)::\(.message)") | .[]'
