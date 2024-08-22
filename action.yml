@@ -74,6 +74,7 @@ runs:
         path: ./vscode-wow-api
 
     - name: Add vscode-wow-api to .luarc.json
+      shell: bash
       run: |
         jq '.["workspace.library"] += ["${{ github.workspace }}/vscode-wow-api/Annotations"]' ${{ github.workspace }}/repo/.luarc.json > temp.json && mv temp.json ${{ github.workspace }}/repo/.luarc.json
 
