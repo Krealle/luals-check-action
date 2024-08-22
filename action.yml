@@ -128,7 +128,7 @@ runs:
               message: .message, 
               severity: (if .severity <= 1 then "ERR" else "WARN" end)
             }) | 
-            map("[\(.severity)] **\(.code):** \(.file)#L\(.line)\n>\(.message)") | .[]' \
+            map("[\(.severity)] **\(.code):** \(.file)#L\(.line)\n>\(.message)\n") | .[]' \
           | tee $GITHUB_STEP_SUMMARY
 
         if [[ $STATUS == 0 ]] ; then
