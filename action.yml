@@ -127,6 +127,20 @@ runs:
         fi
 
         # GitHub annotations
-        cat ${{ github.workspace }}/luals/log/check.json |  jq -r 'to_entries | map(.key as $file | .value[] | {file: $file | sub("file://${{ github.workspace }}/repo/"; ""), title: .code, line: .range.start.line, endLine: .range.end.line, col: .range.start.character, endColumn: .range.end.character, message: .message | gsub("\n"; "\\\\n"; "m"), level: (if .severity <= 1 then "error" else "warning" end)}) | map("::\(.level) file=\(.file),line=\(.line+1),endLine=\(.line+1),col=\(.col+1),endColumn=\(.endColumn+1),title=\(.title)::\(.message)") | .[]'
+        cat ${{ github.workspace }}/luals/log/check.json | \
+        jq -r \
+        'to_entries | map(.key as $file | .value[] | 
+          {
+            file: $file | sub("file://${{ github.workspace }}/repo/"; ""), 
+            title: .code, 
+            line: .range.start.line, 
+            endLine: .range.end.line, 
+            col: .range.start.character, 
+            endColumn: .range.end.character, 
+            message: .message | gsub("\n"; "\\\\n"; "m"), 
+            level: (if .severity <= 1 then "error" else "warning" end)
+          }) | 
+          map("::\(.level) file=\(.file),line=\(.line+1),endLine=\(.line+1),col=\(.col+1),endColumn=\(.endColumn+1),title=\(.title)::\(.message)") | .[]'
+
         rm -rf log/*
         exit $STATUS
