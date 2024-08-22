@@ -103,9 +103,6 @@ runs:
           --check "${{ github.workspace }}/repo${{ inputs.check-dir }}" \
           ${{ inputs.extra-args }}
 
-        # LuaLS >= 3.9 always writes check.json, older ones only on error, normalize to 3.9 behavior
-        touch log/check.json
-
         STATUS=0
         if [[ $(wc -l < log/check.json) > 0 ]] ; then
           STATUS=1
