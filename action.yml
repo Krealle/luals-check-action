@@ -20,6 +20,13 @@ inputs:
       Defaults to Warning.
     required: false
     default: Warning
+  config-path:
+    description: >
+      Path to .luarc.json to use.
+
+      Defaults to .luarc.json in the repository root.
+    required: false
+    default: .luarc.json
 
 runs:
   using: composite
@@ -76,7 +83,7 @@ runs:
     - name: Add vscode-wow-api to .luarc.json
       shell: bash
       run: |
-        jq '.["workspace.library"] += ["${{ github.workspace }}/vscode-wow-api/Annotations"]' ${{ github.workspace }}/repo/.luarc.json > temp.json && mv temp.json ${{ github.workspace }}/repo/.luarc.json
+        jq '.["workspace.library"] += ["${{ github.workspace }}/vscode-wow-api/Annotations"]' ${{ github.workspace }}/repo/${{ github.config-path }} > temp.json && mv temp.json ${{ github.workspace }}/repo/${{ github.config-path }}
 
     - name: Run checks
       shell: bash
@@ -85,7 +92,7 @@ runs:
         rm -f log/check.json
         ./bin/lua-language-server \
           --checklevel ${{ inputs.checklevel }} \
-          --configpath "${{ github.workspace }}/repo/.luarc.json" \
+          --configpath "${{ github.workspace }}/repo/${{ github.config-path }}" \
           --trust_all_plugins \
           --check "${{ github.workspace }}/repo" \
           ${{ inputs.extra-args }}
@@ -96,7 +103,7 @@ runs:
           STATUS=1
         fi
 
-        # Warnings as readable outsputs because GitHub doesn't show any metadata in the log when emitting annotations and limits annotations to 10 or so
+        # Warnings as readable outputs because GitHub doesn't show any metadata in the log when emitting annotations and limits annotations to 10 or so
         cat ${{ github.workspace }}/luals/log/check.json | \
           jq -r 'to_entries | map(.key as $file | .value[] | {file: $file | sub("file://${{ github.workspace }}/repo/"; ""), title: .code, line: .range.start.line, endLine: .range.end.line, col: .range.start.character, endColumn: .range.end.character, message: .message, level: (if .severity <= 1 then "Error" else "Warning" end)}) | map("\(.level): \(.file):\(.line+1):\(.col+1) \(.title) - \(.message)") | .[]' \
           | tee $GITHUB_STEP_SUMMARY
