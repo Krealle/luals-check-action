@@ -1,0 +1,13 @@
+name: lua-check
+
+on:
+  push:
+    branches:
+      - "**" # Triggers on commits to any branch
+
+jobs:
+  LUA:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check LUA
+        uses: Krealle/luals-check-action@main
