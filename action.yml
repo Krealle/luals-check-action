@@ -84,7 +84,7 @@ runs:
     - name: Checkout vscode-wow-api
       uses: actions/checkout@v4
       with:
-        repository: Ketho/vscode-wow-api
+        repository: Ketho/vscode-wow-api@0.18.2 
         path: ./vscode-wow-api
 
     - name: Add vscode-wow-api to config file
